@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -39,7 +40,8 @@ import com.example.studentmanagementapp.viewmodel.StudentViewModel
 fun StudentListScreen(
     viewModel: StudentViewModel,
     onAddClick: () -> Unit,
-    onStudentClick: (Student) -> Unit
+    onStudentClick: (Student) -> Unit,
+    onLogout: () -> Unit
 ) {
     LaunchedEffect(Unit) {
         viewModel.loadStudents()
@@ -54,6 +56,12 @@ fun StudentListScreen(
                         Icon(
                             imageVector = Icons.Filled.Refresh,
                             contentDescription = "Refresh"
+                        )
+                    }
+                    IconButton(onClick = onLogout) {
+                        Icon(
+                            imageVector = Icons.Filled.ExitToApp,
+                            contentDescription = "Logout"
                         )
                     }
                 }

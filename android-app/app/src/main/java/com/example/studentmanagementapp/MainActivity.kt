@@ -15,10 +15,14 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.studentmanagementapp.data.local.AppDatabase
 import com.example.studentmanagementapp.data.remote.RetrofitClient
+import com.example.studentmanagementapp.data.remote.TokenStorage
 import com.example.studentmanagementapp.data.repository.StudentRepository
 import com.example.studentmanagementapp.ui.AddEditStudentScreen
 import com.example.studentmanagementapp.ui.StudentDetailScreen
 import com.example.studentmanagementapp.ui.StudentListScreen
+import com.example.studentmanagementapp.ui.login.LoginScreen
+import com.example.studentmanagementapp.ui.login.LoginViewModel
+import com.example.studentmanagementapp.ui.login.LoginViewModelFactory
 import com.example.studentmanagementapp.ui.theme.StudentManagementAppTheme
 import com.example.studentmanagementapp.viewmodel.StudentViewModel
 import com.example.studentmanagementapp.viewmodel.StudentViewModelFactory
@@ -27,16 +31,24 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // ประกอบ Dependency ด้วยมือ (ไม่ใช้ Hilt/Koin ตามขอบเขตของใบงาน Part 1)
+        val tokenStorage = TokenStorage(applicationContext)
+        val authApi = RetrofitClient.authApi(tokenStorage)
+        val studentApi = RetrofitClient.studentApi(tokenStorage)
+
         val dao = AppDatabase.getDatabase(applicationContext).studentDao()
-        val repository = StudentRepository(dao, RetrofitClient.api)
-        val factory = StudentViewModelFactory(repository)
+        val repository = StudentRepository(dao, studentApi)
+        val studentFactory = StudentViewModelFactory(repository)
+        val loginFactory = LoginViewModelFactory(authApi, tokenStorage)
 
         setContent {
             StudentManagementAppTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    val viewModel: StudentViewModel = viewModel(factory = factory)
-                    StudentManagementApp(viewModel)
+                    val viewModel: StudentViewModel = viewModel(factory = studentFactory)
+                    StudentManagementApp(
+                        viewModel = viewModel,
+                        loginFactory = loginFactory,
+                        tokenStorage = tokenStorage
+                    )
                 }
             }
         }
@@ -44,16 +56,39 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun StudentManagementApp(viewModel: StudentViewModel) {
+fun StudentManagementApp(
+    viewModel: StudentViewModel,
+    loginFactory: LoginViewModelFactory,
+    tokenStorage: TokenStorage
+) {
     val navController = rememberNavController()
+    val startDestination = if (tokenStorage.getToken() != null) "list" else "login"
 
-    NavHost(navController = navController, startDestination = "list") {
+    NavHost(navController = navController, startDestination = startDestination) {
+
+        composable("login") {
+            val loginViewModel: LoginViewModel = viewModel(factory = loginFactory)
+            LoginScreen(
+                viewModel = loginViewModel,
+                onLoginSuccess = {
+                    navController.navigate("list") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                }
+            )
+        }
 
         composable("list") {
             StudentListScreen(
                 viewModel = viewModel,
                 onAddClick = { navController.navigate("add") },
-                onStudentClick = { student -> navController.navigate("detail/${student.id}") }
+                onStudentClick = { student -> navController.navigate("detail/${student.id}") },
+                onLogout = {
+                    tokenStorage.clearToken()
+                    navController.navigate("login") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
             )
         }
 
