@@ -1,0 +1,14 @@
+# Android
+android-app/.gradle/
+android-app/.idea/
+android-app/local.properties
+android-app/app/build/
+android-app/build/
+android-app/.cxx/
+android-app/*.iml
+
+# Backend (Python)
+student-api/venv/
+student-api/__pycache__/
+student-api/*.pyc
+.idea/
