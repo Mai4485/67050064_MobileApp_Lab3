@@ -15,14 +15,16 @@ app = FastAPI()
 def seed_default_user():
     db = next(get_db())
     try:
-        existing = db.query(models.User).filter(models.User.username == "jarugit").first()
-        if existing is None:
-            default_user = models.User(
+        user = db.query(models.User).filter(models.User.username == "jarugit").first()
+        if user is None:
+            user = models.User(
                 username="jarugit",
                 hashed_password=auth.get_password_hash("jarugit1234"),
             )
-            db.add(default_user)
-            db.commit()
+            db.add(user)
+        else:
+            user.hashed_password = auth.get_password_hash("jarugit1234")
+        db.commit()
     finally:
         db.close()
 
